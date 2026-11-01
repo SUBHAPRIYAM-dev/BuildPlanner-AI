@@ -24,6 +24,8 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { ftToMm } from '@buildplanner/units';
+import { generateLocalProject, saveProjectLocally } from '../../services/projectService';
+import { useEditorStore } from '../../stores/editorStore';
 
 export interface FloorReqItem {
   levelIndex: number;
@@ -177,73 +179,93 @@ export const ResidentialWizardPage: React.FC = () => {
       const widthMm = unit === 'ft' ? ftToMm(plotWidth) : Math.round(plotWidth * 1000);
       const lengthMm = unit === 'ft' ? ftToMm(plotLength) : Math.round(plotLength * 1000);
 
-      // 1. Create Project
-      const projectData: any = await apiFetch('/projects', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: projectName,
-          description: `Residential ${floorsCount > 1 ? `G+${floorsCount - 1}` : 'Single Story'} Villa in ${city}, ${country}`,
-          propertyType: 'RESIDENTIAL',
-          location: { city, state, country },
-          plot: { widthMm, lengthMm, shape: 'RECTANGLE' },
-          roads: {
-            NORTH: {
-              enabled: roads.NORTH.enabled,
-              widthMm: unit === 'ft' ? ftToMm(roads.NORTH.width || 30) : (roads.NORTH.width || 9) * 1000,
-              type: 'ACCESS'
-            },
-            SOUTH: {
-              enabled: roads.SOUTH.enabled,
-              widthMm: unit === 'ft' ? ftToMm(roads.SOUTH.width || 0) : (roads.SOUTH.width || 0) * 1000,
-              type: 'ACCESS'
-            },
-            EAST: {
-              enabled: roads.EAST.enabled,
-              widthMm: unit === 'ft' ? ftToMm(roads.EAST.width || 0) : (roads.EAST.width || 0) * 1000,
-              type: 'ACCESS'
-            },
-            WEST: {
-              enabled: roads.WEST.enabled,
-              widthMm: unit === 'ft' ? ftToMm(roads.WEST.width || 40) : (roads.WEST.width || 12) * 1000,
-              type: 'MAIN'
-            }
+      const payload = {
+        name: projectName,
+        description: `Residential ${floorsCount > 1 ? `G+${floorsCount - 1}` : 'Single Story'} Villa in ${city}, ${country}`,
+        propertyType: 'RESIDENTIAL' as const,
+        location: { city, state, country },
+        plot: { widthMm, lengthMm, shape: 'RECTANGLE' as const },
+        roads: {
+          NORTH: {
+            enabled: roads.NORTH.enabled,
+            widthMm: unit === 'ft' ? ftToMm(roads.NORTH.width || 30) : (roads.NORTH.width || 9) * 1000,
+            type: 'ACCESS'
           },
-          orientationNorthDegrees: northAngle,
-          floorsCount,
-          floorRequirements: floorReqs.map((f) => ({
-            levelIndex: f.levelIndex,
-            name: f.name,
-            bedrooms: Number(f.bedrooms) || 0,
-            bathrooms: (Number(f.attachedBathrooms) || 0) + (Number(f.commonBathrooms) || 0),
-            attachedBathrooms: Number(f.attachedBathrooms) || 0,
-            commonBathrooms: Number(f.commonBathrooms) || 0,
-            living: Number(f.living) || 0,
-            dining: Number(f.dining) || 0,
-            kitchen: Number(f.kitchen) || 0,
-            puja: Number(f.puja) || 0,
-            balcony: Number(f.balcony) || 0,
-            study: Number(f.study) || 0
-          })),
-          parking: {
-            cars: parkingCars,
-            motorcycles: 0,
-            location: parkingLocation
+          SOUTH: {
+            enabled: roads.SOUTH.enabled,
+            widthMm: unit === 'ft' ? ftToMm(roads.SOUTH.width || 0) : (roads.SOUTH.width || 0) * 1000,
+            type: 'ACCESS'
           },
-          staircase: {
-            type: staircaseType,
-            positionZone: staircaseZone
+          EAST: {
+            enabled: roads.EAST.enabled,
+            widthMm: unit === 'ft' ? ftToMm(roads.EAST.width || 0) : (roads.EAST.width || 0) * 1000,
+            type: 'ACCESS'
           },
-          vastu: { enabled: vastuEnabled, preference: vastuPreference },
-          futureFloors: { planned: futureFloor, count: 1 }
-        })
-      });
+          WEST: {
+            enabled: roads.WEST.enabled,
+            widthMm: unit === 'ft' ? ftToMm(roads.WEST.width || 40) : (roads.WEST.width || 12) * 1000,
+            type: 'MAIN'
+          }
+        },
+        orientationNorthDegrees: northAngle,
+        floorsCount,
+        floorRequirements: floorReqs.map((f) => ({
+          levelIndex: f.levelIndex,
+          name: f.name,
+          bedrooms: Number(f.bedrooms) || 0,
+          bathrooms: (Number(f.attachedBathrooms) || 0) + (Number(f.commonBathrooms) || 0),
+          attachedBathrooms: Number(f.attachedBathrooms) || 0,
+          commonBathrooms: Number(f.commonBathrooms) || 0,
+          living: Number(f.living) || 0,
+          dining: Number(f.dining) || 0,
+          kitchen: Number(f.kitchen) || 0,
+          puja: Number(f.puja) || 0,
+          balcony: Number(f.balcony) || 0,
+          study: Number(f.study) || 0
+        })),
+        parking: {
+          cars: parkingCars,
+          motorcycles: 0,
+          location: parkingLocation
+        },
+        staircase: {
+          type: staircaseType,
+          positionZone: staircaseZone
+        },
+        vastu: { enabled: vastuEnabled, preference: vastuPreference },
+        futureFloors: { planned: futureFloor, count: 1 }
+      };
 
-      // 2. Trigger Planning Engine Generation
-      const generationData: any = await apiFetch(`/projects/${projectData._id}/generate`, {
-        method: 'POST'
-      });
+      try {
+        // 1. Try remote API first
+        const projectData: any = await apiFetch('/projects', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
 
-      return { project: projectData, generation: generationData };
+        // 2. Trigger Planning Engine Generation
+        const generationData: any = await apiFetch(`/projects/${projectData._id}/generate`, {
+          method: 'POST'
+        });
+
+        if (generationData?.selectedModel) {
+          useEditorStore.getState().setModel(generationData.selectedModel);
+          saveProjectLocally({
+            ...projectData,
+            currentModel: generationData.selectedModel
+          });
+        }
+
+        return { project: projectData, generation: generationData };
+      } catch (apiErr) {
+        console.warn('Backend API unavailable. Generating plan in browser via Parametric Planning Engine...', apiErr);
+
+        // Fallback to bundled client-side planning engine
+        const local = generateLocalProject(payload);
+        useEditorStore.getState().setModel(local.buildingModel);
+
+        return { project: local.project, generation: { selectedModel: local.buildingModel } };
+      }
     },
     onSuccess: (data) => {
       navigate(`/workspace/${data.project._id}`);

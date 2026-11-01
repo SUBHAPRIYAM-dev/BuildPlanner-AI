@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../api/client';
+import { getProjectLocally, saveProjectLocally } from '../../services/projectService';
 import { BuildingModel, RoomModel, LevelModel } from '@buildplanner/building-model';
 import { useEditorStore } from '../../stores/editorStore';
 import { Editor2DCanvas } from '../editor-2d/Editor2DCanvas';
@@ -57,7 +58,25 @@ export const WorkspacePage: React.FC = () => {
   // Fetch Project Data
   const { data: project, isLoading } = useQuery<any>({
     queryKey: ['project', id],
-    queryFn: () => apiFetch(`/projects/${id}`),
+    queryFn: async () => {
+      try {
+        return await apiFetch(`/projects/${id}`);
+      } catch (err) {
+        console.warn('API fetch failed, checking local storage for project:', err);
+        const local = getProjectLocally(id || '');
+        if (local) return local;
+
+        const currentModel = useEditorStore.getState().buildingModel;
+        if (currentModel) {
+          return {
+            _id: id || 'local',
+            name: currentModel.metadata?.title || 'Architectural Villa Plan',
+            currentModel
+          };
+        }
+        throw err;
+      }
+    },
     enabled: !!id
   });
 
@@ -71,15 +90,34 @@ export const WorkspacePage: React.FC = () => {
   // Save Mutation
   const saveMutation = useMutation({
     mutationFn: async (modelToSave: BuildingModel) => {
-      const res: any = await apiFetch(`/projects/${id}/design`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          buildingModel: modelToSave,
-          changeDescription: 'Manual workspace edit',
-          source: 'USER_EDIT'
-        })
-      });
-      return res;
+      try {
+        const res: any = await apiFetch(`/projects/${id}/design`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            buildingModel: modelToSave,
+            changeDescription: 'Manual workspace edit',
+            source: 'USER_EDIT'
+          })
+        });
+        return res;
+      } catch (err) {
+        console.warn('API save failed, persisting locally:', err);
+        const existing = getProjectLocally(id || '') || {
+          _id: id || 'local',
+          name: modelToSave.metadata?.title || 'Architectural Villa Plan',
+          propertyType: 'RESIDENTIAL' as const,
+          location: { city: 'Bhubaneswar', state: 'Odisha', country: 'India' },
+          plot: { widthMm: 9144, lengthMm: 12192, shape: 'RECTANGLE' as const },
+          currentModel: modelToSave,
+          currentVersionNumber: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        existing.currentModel = modelToSave;
+        existing.updatedAt = new Date().toISOString();
+        saveProjectLocally(existing);
+        return { success: true, localSaved: true };
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['project', id] });

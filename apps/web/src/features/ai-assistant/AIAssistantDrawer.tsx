@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiFetch } from '../../api/client';
 import { BuildingModel } from '@buildplanner/building-model';
+import { MockAIProvider } from '@buildplanner/ai-engine';
 import { Button } from '../../components/ui/Button';
 import { Sparkles, Send, Bot, User, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -36,14 +37,29 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
 
   const chatMutation = useMutation({
     mutationFn: async (messageText: string) => {
-      const res: any = await apiFetch(`/projects/${projectId}/ai/chat`, {
-        method: 'POST',
-        body: JSON.stringify({
-          message: messageText,
-          activeLevelIndex
-        })
-      });
-      return res;
+      try {
+        const res: any = await apiFetch(`/projects/${projectId}/ai/chat`, {
+          method: 'POST',
+          body: JSON.stringify({
+            message: messageText,
+            activeLevelIndex
+          })
+        });
+        return res;
+      } catch (err) {
+        console.warn('Remote AI chat failed, falling back to in-browser AI engine:', err);
+        const provider = new MockAIProvider();
+        const localResult = await provider.chat(
+          { model, activeLevelIndex },
+          messageText
+        );
+        return {
+          reply: localResult.reply,
+          operationApplied: localResult.operationApplied,
+          buildingModel: localResult.updatedModel,
+          commandSummary: localResult.commandSummary
+        };
+      }
     },
     onSuccess: (data, variables) => {
       setMessages((prev) => [

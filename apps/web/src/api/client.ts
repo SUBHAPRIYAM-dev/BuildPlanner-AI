@@ -27,11 +27,23 @@ export async function apiFetch<T>(
     headers
   });
 
-  const json: ApiResponse<T> = await res.json();
+  let json: any = null;
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+  }
 
-  if (!res.ok || !json.success) {
-    const errorMsg = json.error?.message || `HTTP ${res.status}: Failed to execute request`;
+  if (!res.ok || (json && !json.success)) {
+    const errorMsg = json?.error?.message || `HTTP ${res.status}: Failed to execute request`;
     throw new Error(errorMsg);
+  }
+
+  if (!json) {
+    throw new Error(`HTTP ${res.status}: Unexpected response from API`);
   }
 
   return json.data as T;

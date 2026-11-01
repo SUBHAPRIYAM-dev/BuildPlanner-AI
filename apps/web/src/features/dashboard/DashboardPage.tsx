@@ -18,6 +18,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { formatLength, formatArea } from '@buildplanner/units';
+import { listProjectsLocally, deleteProjectLocally } from '../../services/projectService';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,11 +27,25 @@ export const DashboardPage: React.FC = () => {
 
   const { data: projects = [], isLoading } = useQuery<any[]>({
     queryKey: ['projects'],
-    queryFn: () => apiFetch('/projects')
+    queryFn: async () => {
+      try {
+        const remote = await apiFetch<any[]>('/projects');
+        return remote;
+      } catch (err) {
+        console.warn('API unavailable on Vercel, loading local projects:', err);
+        return listProjectsLocally();
+      }
+    }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiFetch(`/projects/${id}`, { method: 'DELETE' }),
+    mutationFn: async (id: string) => {
+      try {
+        await apiFetch(`/projects/${id}`, { method: 'DELETE' });
+      } catch (err) {
+        deleteProjectLocally(id);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
     }

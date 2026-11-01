@@ -1,0 +1,47 @@
+{
+  "name": "@buildplanner/api",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "tsx dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@buildplanner/units": "workspace:*",
+    "@buildplanner/shared": "workspace:*",
+    "@buildplanner/building-model": "workspace:*",
+    "@buildplanner/geometry-engine": "workspace:*",
+    "@buildplanner/constraint-engine": "workspace:*",
+    "@buildplanner/rule-engine": "workspace:*",
+    "@buildplanner/planning-engine": "workspace:*",
+    "@buildplanner/ai-engine": "workspace:*",
+    "@buildplanner/drawing-engine": "workspace:*",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "mongoose": "^8.10.1",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^3.0.2",
+    "zod": "^3.24.2",
+    "dotenv": "^16.4.7",
+    "mongodb-memory-server": "^10.1.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.13.4",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

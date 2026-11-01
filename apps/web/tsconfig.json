@@ -18,8 +18,18 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@buildplanner/units": ["../../packages/units/src/index.ts"],
+      "@buildplanner/shared": ["../../packages/shared/src/index.ts"],
+      "@buildplanner/building-model": ["../../packages/building-model/src/index.ts"],
+      "@buildplanner/geometry-engine": ["../../packages/geometry-engine/src/index.ts"],
+      "@buildplanner/constraint-engine": ["../../packages/constraint-engine/src/index.ts"],
+      "@buildplanner/rule-engine": ["../../packages/rule-engine/src/index.ts"],
+      "@buildplanner/planning-engine": ["../../packages/planning-engine/src/index.ts"],
+      "@buildplanner/ai-engine": ["../../packages/ai-engine/src/index.ts"],
+      "@buildplanner/drawing-engine": ["../../packages/drawing-engine/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]
 }

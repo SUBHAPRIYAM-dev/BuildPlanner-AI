@@ -17,6 +17,8 @@ describe('Rule Engine', () => {
       type: 'CAR',
       positionMm: { x: 500, y: 500 },
       dimensionsMm: { width: 2500, length: 5000 },
+      location: 'SURFACE_PORCH',
+      slotNumber: 1,
       allocatedLevelIndex: 0
     });
 

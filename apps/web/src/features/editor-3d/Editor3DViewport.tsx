@@ -645,15 +645,81 @@ export const Editor3DViewport: React.FC<Editor3DViewportProps> = ({
       });
     });
 
-    // 13. 3D Car Models for ALL Allocated Parking Bays
+    // 13. High-Visibility 3D Parking Bays & Car Models
     const carColors = [0x0284c7, 0xeab308, 0x10b981, 0xec4899];
-    model.parkingSpaces.forEach((park, idx) => {
-      if (isolatedFloor !== 'ALL') {
-        const isBasement = park.location === 'BASEMENT_UNDERGROUND';
-        const targetLvl = isBasement ? -1 : 0;
-        if (isolatedFloor !== targetLvl) return;
-      }
+    const hasBasementParking = (model.parkingSpaces || []).some(
+      (p) => p.location === 'BASEMENT_UNDERGROUND' || p.allocatedLevelIndex === -1
+    );
 
+    // If Basement Parking is present, render basement slab and retaining walls
+    if (hasBasementParking && (isolatedFloor === 'ALL' || isolatedFloor === -1)) {
+      const basementSlab = new THREE.Mesh(
+        new THREE.BoxGeometry(plotW, 100, plotL),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 })
+      );
+      basementSlab.position.set(plotW / 2, -3050, plotL / 2);
+      basementSlab.receiveShadow = true;
+      buildingGroup.add(basementSlab);
+
+      const retWallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+      const fWall = new THREE.Mesh(new THREE.BoxGeometry(plotW, 3000, 200), retWallMat);
+      fWall.position.set(plotW / 2, -1500, 100);
+      buildingGroup.add(fWall);
+
+      const bWall = new THREE.Mesh(new THREE.BoxGeometry(plotW, 3000, 200), retWallMat);
+      bWall.position.set(plotW / 2, -1500, plotL - 100);
+      buildingGroup.add(bWall);
+
+      const lWall = new THREE.Mesh(new THREE.BoxGeometry(200, 3000, plotL), retWallMat);
+      lWall.position.set(100, -1500, plotL / 2);
+      buildingGroup.add(lWall);
+
+      const rWall = new THREE.Mesh(new THREE.BoxGeometry(200, 3000, plotL), retWallMat);
+      rWall.position.set(plotW - 100, -1500, plotL / 2);
+      buildingGroup.add(rWall);
+    }
+
+    (model.parkingSpaces || []).forEach((park, idx) => {
+      const isBasement = park.location === 'BASEMENT_UNDERGROUND' || park.allocatedLevelIndex === -1;
+      const targetLvl = isBasement ? -1 : 0;
+
+      if (isolatedFloor !== 'ALL' && isolatedFloor !== targetLvl) return;
+
+      const elevY = isBasement ? -2960 : 40;
+      const pw = park.dimensionsMm.width;
+      const pl = park.dimensionsMm.length;
+      const centerX = park.positionMm.x + pw / 2;
+      const centerZ = park.positionMm.y + pl / 2;
+
+      // Heavy-duty Asphalt Parking Stall Pad
+      const stallPad = new THREE.Mesh(
+        new THREE.BoxGeometry(pw, 20, pl),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.95 })
+      );
+      stallPad.position.set(centerX, elevY - 10, centerZ);
+      stallPad.receiveShadow = true;
+      buildingGroup.add(stallPad);
+
+      // Yellow Stall Demarcation Stripes
+      const stripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+      const leftStripe = new THREE.Mesh(new THREE.BoxGeometry(60, 22, pl), stripeMat);
+      leftStripe.position.set(park.positionMm.x + 30, elevY, centerZ);
+      buildingGroup.add(leftStripe);
+
+      const rightStripe = new THREE.Mesh(new THREE.BoxGeometry(60, 22, pl), stripeMat);
+      rightStripe.position.set(park.positionMm.x + pw - 30, elevY, centerZ);
+      buildingGroup.add(rightStripe);
+
+      // Concrete Wheel Stop / Curb Bumper
+      const bumper = new THREE.Mesh(
+        new THREE.BoxGeometry(pw - 600, 140, 200),
+        new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.7 })
+      );
+      bumper.position.set(centerX, elevY + 70, park.positionMm.y + 350);
+      bumper.castShadow = true;
+      buildingGroup.add(bumper);
+
+      // 3D Car Model
       const carGroup = new THREE.Group();
       const carColor = carColors[idx % carColors.length];
 
@@ -673,13 +739,39 @@ export const Editor3DViewport: React.FC<Editor3DViewportProps> = ({
       carCabin.castShadow = true;
       carGroup.add(carCabin);
 
-      const elevY = park.location === 'BASEMENT_UNDERGROUND' ? -2960 : 40;
-      carGroup.position.set(
-        park.positionMm.x + park.dimensionsMm.width / 2,
-        elevY,
-        park.positionMm.y + park.dimensionsMm.length / 2
-      );
+      // Headlights
+      const headlightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      const hlLeft = new THREE.Mesh(new THREE.BoxGeometry(250, 150, 50), headlightMat);
+      hlLeft.position.set(-650, 500, -2110);
+      carGroup.add(hlLeft);
+
+      const hlRight = new THREE.Mesh(new THREE.BoxGeometry(250, 150, 50), headlightMat);
+      hlRight.position.set(650, 500, -2110);
+      carGroup.add(hlRight);
+
+      // Taillights
+      const taillightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+      const tlLeft = new THREE.Mesh(new THREE.BoxGeometry(250, 120, 50), taillightMat);
+      tlLeft.position.set(-650, 520, 2110);
+      carGroup.add(tlLeft);
+
+      const tlRight = new THREE.Mesh(new THREE.BoxGeometry(250, 120, 50), taillightMat);
+      tlRight.position.set(650, 520, 2110);
+      carGroup.add(tlRight);
+
+      carGroup.position.set(centerX, elevY, centerZ);
       buildingGroup.add(carGroup);
+
+      // Floating 3D Text Sprite Badge
+      const labelSprite = createTextSprite(`🚗 Parking Bay ${park.slotNumber || idx + 1}`, {
+        fontSize: 32,
+        bgColor: '#0284c7',
+        borderColor: '#38bdf8',
+        scaleWidth: 2600,
+        scaleHeight: 650
+      });
+      labelSprite.position.set(centerX, elevY + 2200, centerZ);
+      buildingGroup.add(labelSprite);
     });
 
     scene.add(buildingGroup);
@@ -755,6 +847,18 @@ export const Editor3DViewport: React.FC<Editor3DViewportProps> = ({
           >
             All Floors
           </button>
+          {((model.parkingSpaces || []).some(p => p.location === 'BASEMENT_UNDERGROUND' || p.allocatedLevelIndex === -1) && !model.levels.some(l => l.levelIndex === -1)) && (
+            <button
+              onClick={() => setIsolatedFloor(-1)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                isolatedFloor === -1
+                  ? 'bg-sky-500 text-slate-950 font-bold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              Basement
+            </button>
+          )}
           {model.levels.map((lvl) => (
             <button
               key={lvl.levelIndex}

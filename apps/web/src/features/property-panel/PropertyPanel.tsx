@@ -15,19 +15,23 @@ import {
   CheckCircle2,
   Sliders,
   Building,
-  Home
+  Home,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 
 interface PropertyPanelProps {
   model: BuildingModel;
   selectedRoom: RoomModel | null;
   onUpdateRoom?: (updatedRoom: RoomModel) => void;
+  onDeleteRoom?: (roomId: string) => void;
 }
 
 export const PropertyPanel: React.FC<PropertyPanelProps> = ({
   model,
   selectedRoom,
-  onUpdateRoom
+  onUpdateRoom,
+  onDeleteRoom
 }) => {
   const [roomName, setRoomName] = useState('');
   const [widthFt, setWidthFt] = useState(0);
@@ -184,6 +188,35 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
           >
             Apply Position & Size Update
           </Button>
+
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                const tempW = widthFt;
+                setWidthFt(lengthFt);
+                setLengthFt(tempW);
+                applyParametricUpdate(undefined, undefined, lengthFt, tempW);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs flex items-center justify-center gap-1.5 transition-colors"
+              title="Rotate Room Orientation (Swap Width and Length)"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-sky-400" />
+              <span>Rotate (Swap)</span>
+            </button>
+
+            {onDeleteRoom && (
+              <button
+                type="button"
+                onClick={() => onDeleteRoom(selectedRoom.id)}
+                className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/60 text-red-300 border border-red-800/80 font-mono text-xs flex items-center justify-center gap-1.5 transition-colors"
+                title="Delete Selected Room from Floor Plan"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                <span>Delete Room</span>
+              </button>
+            )}
+          </div>
 
           {/* Quick Vastu Relocation Presets */}
           <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 mt-4">

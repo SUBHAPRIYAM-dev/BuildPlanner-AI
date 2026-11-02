@@ -146,6 +146,23 @@ export const WorkspacePage: React.FC = () => {
     setSelectedRoom(updatedRoom);
   };
 
+  const handleDeleteRoom = (roomId: string) => {
+    if (!buildingModel) return;
+    updateModel((prev) => {
+      const next: BuildingModel = JSON.parse(JSON.stringify(prev));
+      for (const lvl of next.levels) {
+        const idx = lvl.rooms.findIndex(r => r.id === roomId);
+        if (idx !== -1) {
+          lvl.rooms.splice(idx, 1);
+          lvl.walls = generateWallsFromRooms(lvl.rooms, lvl.levelIndex);
+          break;
+        }
+      }
+      return next;
+    });
+    setSelectedRoom(null);
+  };
+
   const handleAIModelUpdate = (updatedModel: BuildingModel) => {
     setModel(updatedModel);
     queryClient.invalidateQueries({ queryKey: ['project', id] });
@@ -316,11 +333,13 @@ export const WorkspacePage: React.FC = () => {
               <div className="flex-1 h-full relative">
                 <Editor2DCanvas
                   model={activeModel}
+                  selectedRoom={selectedRoom}
                   onSelectRoom={(room) => {
                     setSelectedRoom(room);
                     setActiveRightTab('PROPERTIES');
                   }}
                   onModelChange={(updated) => updateModel(() => updated)}
+                  onDeleteRoom={handleDeleteRoom}
                 />
               </div>
             )}
@@ -342,6 +361,21 @@ export const WorkspacePage: React.FC = () => {
               <span className="text-xs font-mono text-slate-400 mr-2 uppercase tracking-wider font-semibold">
                 Active Level:
               </span>
+
+              {/* If Basement Parking is allocated, include Basement Tab */}
+              {((activeModel.parkingSpaces || []).some(p => p.location === 'BASEMENT_UNDERGROUND' || p.allocatedLevelIndex === -1) && !activeModel.levels.some(l => l.levelIndex === -1)) && (
+                <button
+                  onClick={() => setActiveLevelIndex(-1)}
+                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                    activeLevelIndex === -1
+                      ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  Basement (L-1)
+                </button>
+              )}
+
               {activeModel.levels.map((lvl: LevelModel) => (
                 <button
                   key={lvl.levelIndex}
@@ -371,6 +405,7 @@ export const WorkspacePage: React.FC = () => {
               model={activeModel}
               selectedRoom={selectedRoom}
               onUpdateRoom={handleUpdateRoom}
+              onDeleteRoom={handleDeleteRoom}
             />
           )}
           {activeRightTab === 'AI' && (

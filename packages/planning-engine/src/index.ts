@@ -229,8 +229,8 @@ export function generatePlanningCandidates(input: PlanningInput): PlanningCandid
     const stairW = stairType === 'STRAIGHT' ? 1400 : 2100;
     const stairL = stairType === 'STRAIGHT' ? 3000 : 2000;
 
-    // Building plinth origin on Ground Floor (behind car parking if surface parking is active)
-    const hasSurfaceParkingOverall = (parkingLoc === 'SURFACE_PORCH') && (carsCount >= 1);
+    // Building plinth origin on Ground Floor (behind car parking if surface/stilt parking is active)
+    const hasSurfaceParkingOverall = (parkingLoc === 'SURFACE_PORCH' || parkingLoc === 'STILT') && (carsCount >= 1);
     const groundFloorOriginY = hasSurfaceParkingOverall ? 5100 : originY;
     const envMaxY = originY + envL;
     const buildingEnvL = envMaxY - groundFloorOriginY;
@@ -603,9 +603,9 @@ export function generatePlanningCandidates(input: PlanningInput): PlanningCandid
       let slotX = 300 + i * (carSlotWidth + 200);
       let slotY = 0; // Front driveway yard (0 to 5000mm, strictly before groundFloorOriginY=5100mm)
 
-      if (parkingLoc === 'SURFACE_PORCH') {
+      if (parkingLoc === 'SURFACE_PORCH' || parkingLoc === 'STILT') {
         slotX = 300 + i * (carSlotWidth + 200);
-        slotY = 0; // Porch in front yard (0 to 5000mm < groundFloorOriginY=5100mm)
+        slotY = 0; // Porch/Stilt in front yard (0 to 5000mm < groundFloorOriginY=5100mm)
       } else if (parkingLoc === 'BASEMENT_UNDERGROUND') {
         slotX = originX + i * (carSlotWidth + 300);
         slotY = originY + 500;
@@ -627,7 +627,7 @@ export function generatePlanningCandidates(input: PlanningInput): PlanningCandid
     // -----------------------------------------------------------------------
     const plotAreaSqm = Number(((plot.widthMm * plot.lengthMm) / 1_000_000).toFixed(2));
     const gfBoundingW = bayLeftW + bayRightW;
-    const gfBoundingL = envL - ((parkingLoc === 'SURFACE_PORCH' && carsCount >= 1 ? 5000 : originY) - originY);
+    const gfBoundingL = envL - ((hasSurfaceParkingOverall ? 5100 : originY) - originY);
     const groundCoverageSqm = Number(((gfBoundingW * gfBoundingL) / 1_000_000).toFixed(2));
     const totalBuiltUpAreaSqm = Number(
       levels.reduce((sum, lvl) => sum + lvl.rooms.reduce((acc, r) => acc + r.areaSqm, 0), 0).toFixed(2)

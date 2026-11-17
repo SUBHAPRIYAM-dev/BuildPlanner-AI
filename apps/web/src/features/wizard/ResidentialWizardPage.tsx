@@ -16,7 +16,8 @@ import {
   Plus,
   Minus,
   Globe,
-  AlertCircle
+  AlertCircle,
+  LogIn
 } from 'lucide-react';
 import { apiFetch } from '../../api/client';
 import { Button } from '../../components/ui/Button';
@@ -26,6 +27,8 @@ import { Badge } from '../../components/ui/Badge';
 import { ftToMm } from '@buildplanner/units';
 import { generateLocalProject, saveProjectLocally } from '../../services/projectService';
 import { useEditorStore } from '../../stores/editorStore';
+import { useAuthStore } from '../../stores/authStore';
+import { AuthModal } from '../auth/AuthModal';
 
 export interface FloorReqItem {
   levelIndex: number;
@@ -95,6 +98,8 @@ const GLOBAL_COUNTRY_PRESETS = [
 
 export const ResidentialWizardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const [step, setStep] = useState(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -303,6 +308,25 @@ export const ResidentialWizardPage: React.FC = () => {
                   : 'Statutory Building Code & NBC Norms Active'}
               </p>
             </div>
+          </div>
+
+          {/* Account Status / Log In button */}
+          <div>
+            {!user ? (
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-xs font-semibold transition-all shadow-sm"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Log In to Save</span>
+              </button>
+            ) : (
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span>Account: <strong className="text-slate-200">{user.name}</strong></span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1022,6 +1046,12 @@ export const ResidentialWizardPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../api/client';
 import { getProjectLocally, saveProjectLocally } from '../../services/projectService';
-import { BuildingModel, RoomModel, LevelModel } from '@buildplanner/building-model';
+import { BuildingModel, RoomModel, LevelModel, StaircaseModel } from '@buildplanner/building-model';
 import { useEditorStore } from '../../stores/editorStore';
 import { Editor2DCanvas } from '../editor-2d/Editor2DCanvas';
 import { Editor3DViewport } from '../editor-3d/Editor3DViewport';
@@ -52,6 +52,7 @@ export const WorkspacePage: React.FC = () => {
 
   const [activeRightTab, setActiveRightTab] = useState<'PROPERTIES' | 'AI' | 'VALIDATION'>('PROPERTIES');
   const [selectedRoom, setSelectedRoom] = useState<RoomModel | null>(null);
+  const [selectedStaircase, setSelectedStaircase] = useState<StaircaseModel | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
 
@@ -161,6 +162,23 @@ export const WorkspacePage: React.FC = () => {
       return next;
     });
     setSelectedRoom(null);
+  };
+
+  const handleUpdateStaircase = (updatedStair: StaircaseModel) => {
+    if (!buildingModel) return;
+
+    updateModel((prev) => {
+      const next: BuildingModel = JSON.parse(JSON.stringify(prev));
+      const idx = (next.staircases || []).findIndex((s) => s.id === updatedStair.id);
+      if (idx !== -1) {
+        next.staircases[idx] = updatedStair;
+      } else {
+        next.staircases = [updatedStair];
+      }
+      return next;
+    });
+
+    setSelectedStaircase(updatedStair);
   };
 
   const handleAIModelUpdate = (updatedModel: BuildingModel) => {
@@ -334,8 +352,15 @@ export const WorkspacePage: React.FC = () => {
                 <Editor2DCanvas
                   model={activeModel}
                   selectedRoom={selectedRoom}
+                  selectedStaircase={selectedStaircase}
                   onSelectRoom={(room) => {
                     setSelectedRoom(room);
+                    if (room) setSelectedStaircase(null);
+                    setActiveRightTab('PROPERTIES');
+                  }}
+                  onSelectStaircase={(stair) => {
+                    setSelectedStaircase(stair);
+                    if (stair) setSelectedRoom(null);
                     setActiveRightTab('PROPERTIES');
                   }}
                   onModelChange={(updated) => updateModel(() => updated)}
@@ -404,8 +429,14 @@ export const WorkspacePage: React.FC = () => {
             <PropertyPanel
               model={activeModel}
               selectedRoom={selectedRoom}
+              selectedStaircase={selectedStaircase}
               onUpdateRoom={handleUpdateRoom}
               onDeleteRoom={handleDeleteRoom}
+              onUpdateStaircase={handleUpdateStaircase}
+              onSelectStaircase={(stair) => {
+                setSelectedStaircase(stair);
+                if (stair) setSelectedRoom(null);
+              }}
             />
           )}
           {activeRightTab === 'AI' && (

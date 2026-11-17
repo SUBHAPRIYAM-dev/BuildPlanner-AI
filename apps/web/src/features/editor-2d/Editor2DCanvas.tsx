@@ -6,7 +6,8 @@ import {
   DoorModel,
   WindowModel,
   Point2D,
-  LevelModel
+  LevelModel,
+  StaircaseModel
 } from '@buildplanner/building-model';
 import { useEditorStore } from '../../stores/editorStore';
 import { formatLength, formatArea, ftToMm } from '@buildplanner/units';
@@ -30,7 +31,9 @@ import { generateWallsFromRooms } from '@buildplanner/geometry-engine';
 interface Editor2DCanvasProps {
   model: BuildingModel;
   selectedRoom?: RoomModel | null;
+  selectedStaircase?: StaircaseModel | null;
   onSelectRoom?: (room: RoomModel | null) => void;
+  onSelectStaircase?: (stair: StaircaseModel | null) => void;
   onModelChange?: (updated: BuildingModel) => void;
   onDeleteRoom?: (roomId: string) => void;
 }
@@ -51,7 +54,9 @@ const ROOM_PRESETS = [
 export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
   model,
   selectedRoom,
+  selectedStaircase,
   onSelectRoom,
+  onSelectStaircase,
   onModelChange,
   onDeleteRoom
 }) => {
@@ -64,6 +69,7 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
     activeTool,
     setActiveTool,
     selectedId,
+    selectedType,
     setSelectedEntity,
     zoom,
     setZoom,
@@ -79,6 +85,10 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
   // Drag-to-Move room state
   const [draggingRoom, setDraggingRoom] = useState<RoomModel | null>(null);
   const [dragStartPos, setDragStartPos] = useState<{ clientX: number; clientY: number; originX: number; originY: number } | null>(null);
+
+  // Drag-to-Move staircase state
+  const [draggingStair, setDraggingStair] = useState<StaircaseModel | null>(null);
+  const [dragStairStartPos, setDragStairStartPos] = useState<{ clientX: number; clientY: number; originX: number; originY: number } | null>(null);
 
   const plotW = model.site.dimensionsMm.width;
   const plotL = model.site.dimensionsMm.length;
@@ -208,10 +218,60 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
       };
 
       onSelectRoom?.(updatedRoom);
+    } else if (draggingStair && dragStairStartPos && containerRef.current) {
+      hasDraggedRef.current = true;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const svgScale = (viewBoxW / containerRect.width) / (zoom || 1);
+
+      const dxMm = Math.round((e.clientX - dragStairStartPos.clientX) * svgScale);
+      const dyMm = Math.round((e.clientY - dragStairStartPos.clientY) * svgScale);
+
+      const newStartX = Math.max(0, dragStairStartPos.originX + dxMm);
+      const newStartY = Math.max(0, dragStairStartPos.originY + dyMm);
+
+      const updatedStair: StaircaseModel = {
+        ...draggingStair,
+        startPoint: { x: newStartX, y: newStartY }
+      };
+
+      onSelectStaircase?.(updatedStair);
     }
   };
 
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
+    if (draggingStair && dragStairStartPos && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const svgScale = (viewBoxW / containerRect.width) / (zoom || 1);
+      const dxMm = Math.round((e.clientX - dragStairStartPos.clientX) * svgScale);
+      const dyMm = Math.round((e.clientY - dragStairStartPos.clientY) * svgScale);
+
+      if (Math.abs(dxMm) > 20 || Math.abs(dyMm) > 20) {
+        const newStartX = Math.max(0, dragStairStartPos.originX + dxMm);
+        const newStartY = Math.max(0, dragStairStartPos.originY + dyMm);
+
+        const updatedStair: StaircaseModel = {
+          ...draggingStair,
+          startPoint: { x: newStartX, y: newStartY }
+        };
+
+        const nextModel: BuildingModel = JSON.parse(JSON.stringify(model));
+        nextModel.staircases = (nextModel.staircases || []).map((s) =>
+          s.id === draggingStair.id ? updatedStair : s
+        );
+
+        onModelChange?.(nextModel);
+        setSelectedEntity(updatedStair.id, 'STAIR');
+        onSelectStaircase?.(updatedStair);
+      }
+
+      setDraggingStair(null);
+      setDragStairStartPos(null);
+      setTimeout(() => {
+        hasDraggedRef.current = false;
+      }, 50);
+      return;
+    }
+
     if (draggingRoom && dragStartPos && containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
       const svgScale = (viewBoxW / containerRect.width) / (zoom || 1);
@@ -272,12 +332,30 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
     if (activeTool === 'SELECT') {
       setSelectedEntity(room.id, 'ROOM');
       onSelectRoom?.(room);
+      onSelectStaircase?.(null);
       setDraggingRoom(room);
       setDragStartPos({
         clientX: e.clientX,
         clientY: e.clientY,
         originX: room.bounds.minX,
         originY: room.bounds.minY
+      });
+    }
+  };
+
+  const handleStairMouseDown = (e: MouseEvent, stair: StaircaseModel) => {
+    e.stopPropagation();
+    hasDraggedRef.current = false;
+    if (activeTool === 'SELECT') {
+      setSelectedEntity(stair.id, 'STAIR');
+      onSelectRoom?.(null);
+      onSelectStaircase?.(stair);
+      setDraggingStair(stair);
+      setDragStairStartPos({
+        clientX: e.clientX,
+        clientY: e.clientY,
+        originX: stair.startPoint.x,
+        originY: stair.startPoint.y
       });
     }
   };
@@ -892,8 +970,9 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
             );
           })}
 
-          {/* Staircase Core (Supports U-Shape, Straight & L-Shaped) */}
+          {/* Staircase Core (Selectable & Draggable in 2D) */}
           {model.staircases.map((stair) => {
+            const isSelected = selectedStaircase?.id === stair.id || (selectedId === stair.id && selectedType === 'STAIR');
             const sx = stair.startPoint.x;
             const sy = stair.startPoint.y;
             const sw = stair.dimensionsMm.width;
@@ -901,9 +980,44 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
             const type = stair.type || 'DOG_LEGGED_U';
 
             return (
-              <g key={stair.id} className="staircase-entity pointer-events-none">
-                <rect x={sx} y={sy} width={sw} height={sl} fill="#0f172a" stroke="#38bdf8" strokeWidth={40} />
+              <g
+                key={stair.id}
+                className="staircase-entity cursor-move group select-none"
+                onMouseDown={(e) => handleStairMouseDown(e, stair)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectRoom?.(null);
+                  onSelectStaircase?.(stair);
+                }}
+              >
+                {/* Background Plinth */}
+                <rect
+                  x={sx}
+                  y={sy}
+                  width={sw}
+                  height={sl}
+                  fill={isSelected ? '#0c1a2e' : '#0f172a'}
+                  stroke={isSelected ? '#38bdf8' : '#0284c7'}
+                  strokeWidth={isSelected ? 65 : 40}
+                  className="transition-colors"
+                />
 
+                {/* Selected Pulse Ring */}
+                {isSelected && (
+                  <rect
+                    x={sx - 35}
+                    y={sy - 35}
+                    width={sw + 70}
+                    height={sl + 70}
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth={35}
+                    strokeDasharray="140,70"
+                    className="animate-pulse"
+                  />
+                )}
+
+                {/* Steps Rendering */}
                 {type === 'DOG_LEGGED_U' && (
                   <g>
                     {Array.from({ length: 9 }).map((_, i) => {
@@ -916,7 +1030,7 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
                       );
                     })}
                     <line x1={sx} y1={sy + sl - stair.landingWidthMm} x2={sx + sw} y2={sy + sl - stair.landingWidthMm} stroke="#ffffff" strokeWidth={40} />
-                    <text x={sx + sw / 2} y={sy + sl - stair.landingWidthMm / 2 + 40} fill="#cbd5e1" fontSize={140} textAnchor="middle">
+                    <text x={sx + sw / 2} y={sy + sl - stair.landingWidthMm / 2 + 40} fill="#cbd5e1" fontSize={140} textAnchor="middle" fontWeight="bold">
                       LANDING (U-SHAPE)
                     </text>
                   </g>
@@ -930,7 +1044,7 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
                         <line key={i} x1={sx} y1={stepY} x2={sx + sw} y2={stepY} stroke="#94a3b8" strokeWidth={25} />
                       );
                     })}
-                    <text x={sx + sw / 2} y={sy + sl / 2} fill="#cbd5e1" fontSize={140} textAnchor="middle">
+                    <text x={sx + sw / 2} y={sy + sl / 2} fill="#cbd5e1" fontSize={140} textAnchor="middle" fontWeight="bold">
                       STRAIGHT FLIGHT
                     </text>
                   </g>
@@ -945,7 +1059,7 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
                       );
                     })}
                     <rect x={sx} y={sy + sl - stair.landingWidthMm} width={stair.landingWidthMm} height={stair.landingWidthMm} fill="#1e293b" stroke="#ffffff" strokeWidth={30} />
-                    <text x={sx + sw / 2} y={sy + sl - stair.landingWidthMm / 2} fill="#cbd5e1" fontSize={140} textAnchor="middle">
+                    <text x={sx + sw / 2} y={sy + sl - stair.landingWidthMm / 2} fill="#cbd5e1" fontSize={140} textAnchor="middle" fontWeight="bold">
                       CORNER LANDING (L-SHAPE)
                     </text>
                   </g>
@@ -954,6 +1068,30 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
                 <text x={sx + sw / 4} y={sy + 120} fill="#38bdf8" fontSize={130} fontWeight="bold" textAnchor="middle">
                   UP
                 </text>
+
+                {/* Selected Label & Dimensions Callout */}
+                {isSelected && (
+                  <g pointerEvents="none">
+                    <rect
+                      x={sx + sw / 2 - 380}
+                      y={sy - 180}
+                      width={760}
+                      height={130}
+                      rx={20}
+                      fill="#0284c7"
+                    />
+                    <text
+                      x={sx + sw / 2}
+                      y={sy - 95}
+                      fill="#ffffff"
+                      fontSize={85}
+                      fontWeight="bold"
+                      textAnchor="middle"
+                    >
+                      {(sw / 304.8).toFixed(1)}' × {(sl / 304.8).toFixed(1)}' • Drag to Reposition
+                    </text>
+                  </g>
+                )}
               </g>
             );
           })}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { 
   Compass, 
   Layers, 
@@ -10,7 +10,6 @@ import {
   ArrowRight, 
   ShieldCheck, 
   FileText,
-  MapPin,
   CheckCircle2
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -18,12 +17,6 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 
 export const LandingPage: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleLaunchDemo = () => {
-    navigate('/wizard?demo=true');
-  };
-
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100 overflow-hidden">
       {/* Background Architectural Grid Pattern */}
@@ -56,20 +49,11 @@ export const LandingPage: React.FC = () => {
               <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
           </Link>
-          <Button 
-            variant="secondary" 
-            size="lg" 
-            onClick={handleLaunchDemo}
-            className="w-full sm:w-auto px-8 py-3.5 text-base border-slate-700 bg-slate-900/80 hover:bg-slate-800"
-          >
-            <MapPin className="h-4 w-4 mr-2 text-sky-400" />
-            Explore Bhubaneswar 30×40 Demo
-          </Button>
         </div>
 
-        {/* Demo Specs pill */}
+        {/* Specs pill */}
         <div className="mt-6 flex items-center justify-center gap-6 text-xs text-slate-400 font-mono">
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Bhubaneswar BDA & NBC Norms</span>
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Building Code & NBC Norms</span>
           <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Millimeter Accuracy</span>
           <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Vector PDF Package</span>
         </div>

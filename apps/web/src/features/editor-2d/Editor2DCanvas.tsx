@@ -583,7 +583,7 @@ export const Editor2DCanvas: React.FC<Editor2DCanvasProps> = ({
             <rect x={-pad} y={-pad} width={viewBoxW} height={viewBoxL} fill="url(#canvas-grid)" />
           )}
 
-          {/* Site Boundary (30x40 ft Plot) */}
+          {/* Site Boundary */}
           <rect
             x={0}
             y={0}

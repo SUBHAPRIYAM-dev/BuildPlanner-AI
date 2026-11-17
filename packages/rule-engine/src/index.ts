@@ -152,12 +152,16 @@ export function evaluateRegulatoryCompliance(
     if (rules.some(r => r.status === 'FAIL')) overall = 'FAIL';
     else if (rules.some(r => r.status === 'WARNING')) overall = 'WARNING';
 
+    const authorityName = city && !['global', 'universal', 'standard', ''].includes(city.toLowerCase().trim())
+      ? `${city} Municipal Standards (International Building Code / NBC)`
+      : 'International Building Code (IBC) & General Standards';
+
     return {
       jurisdiction: {
         country: country || 'International',
         state: state || 'Standard',
         city: city || 'Global',
-        authority: 'International Building Code (IBC) & General Standards',
+        authority: authorityName,
         ruleDatasetVersion: 'IBC 2024 / IRC Global Standards'
       },
       overallStatus: overall,

@@ -106,7 +106,7 @@ export const WorkspacePage: React.FC = () => {
           _id: id || 'local',
           name: modelToSave.metadata?.title || 'Architectural Villa Plan',
           propertyType: 'RESIDENTIAL' as const,
-          location: { city: 'Bhubaneswar', state: 'Odisha', country: 'India' },
+          location: { city: '', state: '', country: 'India' },
           plot: { widthMm: 9144, lengthMm: 12192, shape: 'RECTANGLE' as const },
           currentModel: modelToSave,
           currentVersionNumber: 1,
@@ -392,7 +392,7 @@ export const WorkspacePage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
-              <span>{project?.location?.city?.toLowerCase() === 'bhubaneswar' ? 'Bhubaneswar BDA Code Active' : `${project?.location?.country || 'International'} (IBC) Standards Active`}</span>
+              <span>{project?.location?.city ? `${project.location.city}${project.location.state ? `, ${project.location.state}` : ''} Code Active` : 'Standard Building Code Active'}</span>
               <span className="text-emerald-400 font-semibold">PASS (Geometry Compliant)</span>
             </div>
           </footer>

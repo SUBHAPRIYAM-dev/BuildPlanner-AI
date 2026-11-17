@@ -116,13 +116,10 @@ export const DashboardPage: React.FC = () => {
             <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
               Get started by launching the residential planning wizard with your property dimensions.
             </p>
-            <div className="mt-6 flex items-center justify-center gap-3">
+            <div className="mt-6 flex items-center justify-center">
               <Button onClick={() => navigate('/wizard')}>
                 <Plus className="h-4 w-4 mr-1.5" />
                 Start Residential Wizard
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/wizard?demo=true')}>
-                Load Bhubaneswar Demo
               </Button>
             </div>
           </div>

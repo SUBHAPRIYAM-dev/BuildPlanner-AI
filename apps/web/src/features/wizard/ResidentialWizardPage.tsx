@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import {
   Compass,
@@ -84,28 +84,26 @@ function createInitialFloorReq(level: number): FloorReqItem {
 }
 
 const GLOBAL_COUNTRY_PRESETS = [
-  { name: 'India', flag: '🇮🇳', city: 'Bhubaneswar', state: 'Odisha', unit: 'ft' as const, w: 30, l: 40 },
+  { name: 'India', flag: '🇮🇳', city: '', state: '', unit: 'ft' as const, w: 30, l: 40 },
   { name: 'United States', flag: '🇺🇸', city: 'Austin', state: 'Texas', unit: 'ft' as const, w: 40, l: 60 },
   { name: 'United Kingdom', flag: '🇬🇧', city: 'London', state: 'Greater London', unit: 'm' as const, w: 10, l: 15 },
   { name: 'United Arab Emirates', flag: '🇦🇪', city: 'Dubai', state: 'Dubai', unit: 'm' as const, w: 15, l: 20 },
   { name: 'Canada', flag: '🇨🇦', city: 'Toronto', state: 'Ontario', unit: 'ft' as const, w: 35, l: 55 },
   { name: 'Australia', flag: '🇦🇺', city: 'Sydney', state: 'New South Wales', unit: 'm' as const, w: 12, l: 18 },
-  { name: 'Global', flag: '🌐', city: 'Metropolis', state: 'International', unit: 'ft' as const, w: 35, l: 50 }
+  { name: 'Global', flag: '🌐', city: '', state: '', unit: 'ft' as const, w: 35, l: 50 }
 ];
 
 export const ResidentialWizardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isDemoMode = searchParams.get('demo') === 'true';
 
   const [step, setStep] = useState(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Form State
-  const [projectName, setProjectName] = useState(isDemoMode ? 'Bhubaneswar Modern Villa' : 'My Residential Villa');
+  const [projectName, setProjectName] = useState('My Residential Villa');
   const [country, setCountry] = useState('India');
-  const [city, setCity] = useState('Bhubaneswar');
-  const [state, setState] = useState('Odisha');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
 
   // Plot details
   const [unit, setUnit] = useState<'ft' | 'm'>('ft');
@@ -276,7 +274,6 @@ export const ResidentialWizardPage: React.FC = () => {
     }
   });
 
-  const isBhubaneswar = city.toLowerCase().trim() === 'bhubaneswar';
   const totalPlotAreaSqft = unit === 'ft' ? plotWidth * plotLength : Math.round(plotWidth * plotLength * 10.7639);
   const totalPlotAreaSqm = unit === 'm' ? plotWidth * plotLength : Number((plotWidth * plotLength * 0.092903).toFixed(1));
 
@@ -301,40 +298,11 @@ export const ResidentialWizardPage: React.FC = () => {
                 }
               </h2>
               <p className="text-xs text-slate-400 font-mono">
-                {isBhubaneswar
-                  ? 'Bhubaneswar Development Authority (BDA / OBRPS 2020) Active'
-                  : 'International Building Code (IBC) Universal Standards Active'}
+                {city
+                  ? `${city}${state ? `, ${state}` : ''} • Statutory Building Norms Active`
+                  : 'Statutory Building Code & NBC Norms Active'}
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isDemoMode && <Badge variant="info">Demo Preset</Badge>}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setProjectName('Bhubaneswar Modern Villa');
-                setCountry('India');
-                setCity('Bhubaneswar');
-                setState('Odisha');
-                setUnit('ft');
-                setPlotWidth(30);
-                setPlotLength(40);
-                setRoads({
-                  NORTH: { enabled: true, width: 30 },
-                  SOUTH: { enabled: false, width: 0 },
-                  EAST: { enabled: false, width: 0 },
-                  WEST: { enabled: true, width: 40 }
-                });
-                updateFloorCount(2);
-                setParkingCars(1);
-                setFutureFloor(true);
-                setVastuEnabled(true);
-              }}
-            >
-              Reset to 30×40 Demo
-            </Button>
           </div>
         </div>
       </div>
@@ -423,28 +391,22 @@ export const ResidentialWizardPage: React.FC = () => {
                 label="City / Municipality"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Bhubaneswar, Austin, London"
+                placeholder="Enter your city (e.g. Mumbai, Austin, London)"
               />
               <Input
                 label="State / Province"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                placeholder="e.g. Odisha, Texas, Greater London"
+                placeholder="Enter your state (e.g. Maharashtra, Texas, Ontario)"
               />
             </div>
 
             <div className="p-4 rounded-lg bg-sky-950/40 border border-sky-800/40 flex items-start gap-3">
               <ShieldCheck className="h-5 w-5 text-sky-400 flex-shrink-0 mt-0.5" />
               <div className="text-xs text-sky-200 leading-relaxed">
-                {isBhubaneswar ? (
-                  <span>
-                    <strong>BDA / OBRPS 2020 Rules Active:</strong> Verifies ground coverage (&le;65%), front street setback (1.5m), and NBC residential standards.
-                  </span>
-                ) : (
-                  <span>
-                    <strong>International Building Code (IBC) Standards Active:</strong> Universal residential standards, street clearances, NBC/IRC room minimums, and parking ratios are applied.
-                  </span>
-                )}
+                <span>
+                  <strong>{city ? `${city}${state ? `, ${state}` : ''}` : 'Local'} Statutory & Building Code Standards:</strong> Verifies ground coverage, front street setbacks, side/rear clearances, NBC/IRC habitable room minimums, and parking ratios.
+                </span>
               </div>
             </div>
           </Card>

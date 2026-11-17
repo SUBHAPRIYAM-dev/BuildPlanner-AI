@@ -14,8 +14,8 @@ interface ValidationPanelProps {
 
 export const ValidationPanel: React.FC<ValidationPanelProps> = ({
   model,
-  city = 'Bhubaneswar',
-  state = 'Odisha'
+  city = '',
+  state = ''
 }) => {
   const regReport = evaluateRegulatoryCompliance(model, city, state);
   const constraintReport = validateBuildingConstraints(model);

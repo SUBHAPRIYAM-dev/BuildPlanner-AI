@@ -1035,10 +1035,16 @@ export const ResidentialWizardPage: React.FC = () => {
             </Button>
           ) : (
             <Button
-              onClick={() => createAndGenerateMutation.mutate()}
+              onClick={() => {
+                if (!user) {
+                  setIsAuthModalOpen(true);
+                } else {
+                  createAndGenerateMutation.mutate();
+                }
+              }}
               isLoading={createAndGenerateMutation.isPending}
               size="lg"
-              className="shadow-xl shadow-sky-500/30 px-8 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 font-bold"
+              className="shadow-xl shadow-sky-500/30 px-8 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 font-bold cursor-pointer"
             >
               <Sparkles className="h-5 w-5 mr-2" />
               {createAndGenerateMutation.isPending ? 'Synthesizing Architecture...' : 'Generate Parametric Blueprint'}
@@ -1050,7 +1056,13 @@ export const ResidentialWizardPage: React.FC = () => {
       {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
+        title="Sign In to Generate & Save Your Plan"
+        subtitle="Log in or sign up with Google or Email so your architectural blueprint is securely saved to your account."
         onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          setIsAuthModalOpen(false);
+          createAndGenerateMutation.mutate();
+        }}
       />
     </div>
   );

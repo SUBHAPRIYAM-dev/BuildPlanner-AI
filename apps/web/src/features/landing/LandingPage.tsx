@@ -5,23 +5,19 @@ import {
   Layers, 
   Box, 
   Sliders, 
-  FileCheck2, 
   Sparkles, 
   ArrowRight, 
   ShieldCheck, 
-  FileText,
   CheckCircle2,
-  LogIn,
-  User,
   LayoutDashboard,
-  Lock
+  Lock,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { useAuthStore } from '../../stores/authStore';
 import { AuthModal } from '../auth/AuthModal';
-import { GoogleIcon } from '../auth/GoogleIcon';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -29,9 +25,13 @@ export const LandingPage: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
 
-  const openAuth = (mode: 'login' | 'signup') => {
-    setAuthModalMode(mode);
-    setIsAuthModalOpen(true);
+  const handleStartDesigning = () => {
+    if (!user) {
+      setAuthModalMode('login');
+      setIsAuthModalOpen(true);
+    } else {
+      navigate('/wizard');
+    }
   };
 
   return (
@@ -59,48 +59,43 @@ export const LandingPage: React.FC = () => {
           From exact plot dimensions and setback rules to a deterministic, editable 2D architectural blueprint, interactive 3D model, and municipal drawing package.
         </p>
 
-        {/* Primary Action Buttons */}
+        {/* Unified Primary Action: Click "Start Designing" -> Asks for Login if not signed in */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link to="/wizard">
-            <Button size="lg" className="w-full sm:w-auto shadow-xl shadow-sky-500/25 px-8 py-3.5 text-base font-bold bg-sky-500 hover:bg-sky-400 text-slate-950">
-              Start Designing
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </Link>
+          <Button
+            size="lg"
+            onClick={handleStartDesigning}
+            className="w-full sm:w-auto shadow-2xl shadow-sky-500/30 px-9 py-4 text-base font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 flex items-center justify-center gap-2.5 group cursor-pointer"
+          >
+            <span>Start Designing</span>
+            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
 
-          {!user ? (
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              {/* Google Sign In Quick Button */}
-              <button
-                type="button"
-                onClick={() => openAuth('login')}
-                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl border border-slate-700 bg-slate-900/90 hover:bg-slate-800 hover:border-sky-500/50 transition-all text-sm font-semibold text-white shadow-lg"
-              >
-                <GoogleIcon className="h-4 w-4 flex-shrink-0" />
-                <span>Sign in with Google</span>
-              </button>
-
-              {/* Email Login Button */}
-              <button
-                type="button"
-                onClick={() => openAuth('login')}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-white transition-all text-sm font-medium"
-              >
-                <LogIn className="h-4 w-4 text-sky-400" />
-                <span>Log In</span>
-              </button>
-            </div>
-          ) : (
+          {user && (
             <Link to="/dashboard">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-sky-500/40 bg-slate-900/80 hover:bg-slate-800 text-sky-300 px-6 py-3.5 text-sm font-semibold flex items-center gap-2"
+                className="w-full sm:w-auto border-sky-500/40 bg-slate-900/80 hover:bg-slate-800 text-sky-300 px-6 py-4 text-sm font-semibold flex items-center gap-2"
               >
                 <LayoutDashboard className="h-4 w-4" />
-                <span>My Saved Plans ({user.name})</span>
+                <span>My Saved Plans</span>
               </Button>
             </Link>
+          )}
+        </div>
+
+        {/* User Account Status Indicator */}
+        <div className="mt-4 flex items-center justify-center text-xs">
+          {user ? (
+            <span className="flex items-center gap-1.5 text-emerald-400 font-mono bg-emerald-950/40 border border-emerald-800/40 px-3 py-1 rounded-full">
+              <UserCheck className="h-3.5 w-3.5" />
+              <span>Signed in as <strong>{user.name}</strong> ({user.email})</span>
+            </span>
+          ) : (
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <Lock className="h-3 w-3 text-sky-400" />
+              <span>Click "Start Designing" to sign in with Google or Email and save your blueprints</span>
+            </span>
           )}
         </div>
 
@@ -124,7 +119,7 @@ export const LandingPage: React.FC = () => {
               <div>
                 <h3 className="text-xl font-bold text-white flex items-center gap-2.5">
                   <span>User Accounts & Cloud Blueprint Storage</span>
-                  <Badge variant="info">New Feature</Badge>
+                  <Badge variant="info">Parametric Security</Badge>
                 </h3>
                 <p className="text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
                   Sign in with your Google account or email address. Every floor plan, 3D model, and municipal drawing package you generate is automatically saved and isolated to your personal account.
@@ -133,32 +128,13 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto flex-shrink-0">
-              {!user ? (
-                <>
-                  <Button
-                    onClick={() => openAuth('login')}
-                    className="w-full md:w-auto bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-5"
-                  >
-                    <LogIn className="h-4 w-4 mr-1.5" />
-                    Log In Now
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => openAuth('signup')}
-                    className="w-full md:w-auto border-slate-700 hover:bg-slate-800"
-                  >
-                    Sign Up Free
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full md:w-auto bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold"
-                >
-                  <LayoutDashboard className="h-4 w-4 mr-1.5" />
-                  View My Blueprints
-                </Button>
-              )}
+              <Button
+                onClick={handleStartDesigning}
+                className="w-full md:w-auto bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-6 py-2.5"
+              >
+                <span>{user ? 'Open Blueprint Wizard' : 'Start Designing'}</span>
+                <ArrowRight className="h-4 w-4 ml-1.5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -204,14 +180,16 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Auth Modal */}
+      {/* Auth Modal: Pops up upon clicking "Start Designing" when unauthenticated */}
       <AuthModal
         isOpen={isAuthModalOpen}
         initialMode={authModalMode}
+        title="Sign In to Start Designing"
+        subtitle="Log in or create a free account with Google or Email so your architectural blueprint is saved to your account."
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => {
           setIsAuthModalOpen(false);
-          navigate('/dashboard');
+          navigate('/wizard');
         }}
       />
     </div>

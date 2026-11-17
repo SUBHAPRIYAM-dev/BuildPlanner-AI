@@ -57,6 +57,18 @@ export const Navbar: React.FC = () => {
     navigate('/');
   };
 
+  const handleNewPlanClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setAuthModalMode('login');
+      setIsAuthModalOpen(true);
+      setIsMobileMenuOpen(false);
+    } else {
+      setIsMobileMenuOpen(false);
+      navigate('/wizard');
+    }
+  };
+
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
@@ -94,8 +106,9 @@ export const Navbar: React.FC = () => {
                 <LayoutDashboard className="h-4 w-4" />
                 Dashboard
               </Link>
-              <Link
-                to="/wizard"
+              <button
+                type="button"
+                onClick={handleNewPlanClick}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   location.pathname === '/wizard'
                     ? 'bg-slate-800 text-sky-400'
@@ -104,19 +117,21 @@ export const Navbar: React.FC = () => {
               >
                 <Layers className="h-4 w-4" />
                 Residential Wizard
-              </Link>
+              </button>
             </nav>
           </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* New Blueprint Action */}
-            <Link to="/wizard" className="hidden lg:inline-block">
-              <Button size="sm" className="shadow-lg shadow-sky-500/20 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold">
-                <Plus className="h-4 w-4 mr-1.5" />
-                New Plan
-              </Button>
-            </Link>
+            <button
+              type="button"
+              onClick={handleNewPlanClick}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-lg shadow-sky-500/20 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span>New Plan</span>
+            </button>
 
             {/* Unauthenticated User Controls */}
             {!user ? (
@@ -256,14 +271,14 @@ export const Navbar: React.FC = () => {
                 <LayoutDashboard className="h-4 w-4 text-sky-400" />
                 Dashboard & Plans
               </Link>
-              <Link
-                to="/wizard"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
+              <button
+                type="button"
+                onClick={handleNewPlanClick}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white w-full text-left"
               >
                 <Layers className="h-4 w-4 text-sky-400" />
                 Residential Wizard
-              </Link>
+              </button>
             </nav>
 
             {!user ? (

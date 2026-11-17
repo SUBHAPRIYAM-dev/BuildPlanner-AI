@@ -20,18 +20,31 @@ interface AuthModalProps {
   onClose: () => void;
   initialMode?: 'login' | 'signup';
   onSuccess?: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   initialMode = 'login',
-  onSuccess
+  onSuccess,
+  title,
+  subtitle
 }) => {
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [isGoogleCustomOpen, setIsGoogleCustomOpen] = useState(false);
   const [googleCustomEmail, setGoogleCustomEmail] = useState('');
   const [googleCustomName, setGoogleCustomName] = useState('');
+
+  // Sync mode when modal opens or initialMode changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setLocalError(null);
+      setIsGoogleCustomOpen(false);
+    }
+  }, [isOpen, initialMode]);
 
   // Form states
   const [name, setName] = useState('');
@@ -134,12 +147,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <Compass className="h-6 w-6 stroke-[2.2]" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-white">
-            {mode === 'login' ? 'Welcome Back' : 'Create an Account'}
+            {title ? title : (mode === 'login' ? 'Welcome Back' : 'Create an Account')}
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            {mode === 'login'
-              ? 'Log in to access and manage your architectural blueprints'
-              : 'Sign up to generate and save parametric building designs'}
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            {subtitle ? subtitle : (
+              mode === 'login'
+                ? 'Log in to access and manage your architectural blueprints'
+                : 'Sign up to generate and save parametric building designs'
+            )}
           </p>
         </div>
 

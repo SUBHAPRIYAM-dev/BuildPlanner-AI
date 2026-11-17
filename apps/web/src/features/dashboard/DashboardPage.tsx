@@ -70,6 +70,15 @@ export const DashboardPage: React.FC = () => {
     setIsAuthModalOpen(true);
   };
 
+  const handleNewPlanClick = () => {
+    if (!user) {
+      setAuthModalMode('login');
+      setIsAuthModalOpen(true);
+    } else {
+      navigate('/wizard');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 pb-24">
       {/* Page Header */}
@@ -110,7 +119,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button onClick={() => navigate('/wizard')} className="shadow-lg shadow-sky-500/25">
+            <Button onClick={handleNewPlanClick} className="shadow-lg shadow-sky-500/25">
               <Plus className="h-4 w-4 mr-1.5" />
               New Building Plan
             </Button>
@@ -198,7 +207,7 @@ export const DashboardPage: React.FC = () => {
               Get started by launching the residential planning wizard with your property dimensions.
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
-              <Button onClick={() => navigate('/wizard')}>
+              <Button onClick={handleNewPlanClick}>
                 <Plus className="h-4 w-4 mr-1.5" />
                 Start Residential Wizard
               </Button>

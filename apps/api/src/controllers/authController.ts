@@ -86,6 +86,51 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
+export async function googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { email, name, googleId } = req.body;
+    if (!email) {
+      throw new ValidationError('Email is required for Google authentication');
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      const salt = await bcrypt.genSalt(10);
+      const placeholderPass = `google_oauth_${googleId || Date.now()}_${Math.random()}`;
+      const passwordHash = await bcrypt.hash(placeholderPass, salt);
+
+      user = await User.create({
+        email: normalizedEmail,
+        passwordHash,
+        name: name || normalizedEmail.split('@')[0],
+        role: 'HOMEOWNER',
+        provider: 'google'
+      });
+    }
+
+    const tokens = generateTokens({ id: user._id.toString(), email: user.email, role: user.role });
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          organization: user.organization,
+          role: user.role,
+          provider: user.provider || 'google'
+        },
+        tokens
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.user) {

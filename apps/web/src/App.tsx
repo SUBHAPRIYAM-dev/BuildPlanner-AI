@@ -5,6 +5,7 @@ import { LandingPage } from './features/landing/LandingPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ResidentialWizardPage } from './features/wizard/ResidentialWizardPage';
 import { WorkspacePage } from './features/workspace/WorkspacePage';
+import { AuthPage } from './features/auth/AuthPage';
 
 export const App: React.FC = () => {
   return (
@@ -16,6 +17,8 @@ export const App: React.FC = () => {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/wizard" element={<ResidentialWizardPage />} />
           <Route path="/workspace/:id" element={<WorkspacePage />} />
+          <Route path="/login" element={<AuthPage initialMode="login" />} />
+          <Route path="/signup" element={<AuthPage initialMode="signup" />} />
         </Routes>
       </main>
     </div>

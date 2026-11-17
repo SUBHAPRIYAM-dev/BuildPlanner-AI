@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { register, login, getMe, refresh } from '../controllers/authController';
+import { register, login, googleAuth, getMe, refresh } from '../controllers/authController';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -23,6 +23,14 @@ const loginSchema = {
   })
 };
 
+const googleSchema = {
+  body: z.object({
+    email: z.string().email(),
+    name: z.string().optional(),
+    googleId: z.string().optional()
+  })
+};
+
 const refreshSchema = {
   body: z.object({
     refreshToken: z.string().min(1)
@@ -31,6 +39,7 @@ const refreshSchema = {
 
 router.post('/register', validate(registerSchema), register);
 router.post('/login', validate(loginSchema), login);
+router.post('/google', validate(googleSchema), googleAuth);
 router.get('/me', requireAuth, getMe);
 router.post('/refresh', validate(refreshSchema), refresh);
 

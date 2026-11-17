@@ -5,13 +5,16 @@ import {
   Plus, 
   Layers, 
   MapPin, 
-  Calendar, 
   Trash2, 
   ExternalLink, 
   Building2, 
   ShieldCheck, 
   AlertTriangle,
-  FolderOpen
+  FolderOpen,
+  Sparkles,
+  Lock,
+  UserCheck,
+  LogIn
 } from 'lucide-react';
 import { apiFetch } from '../../api/client';
 import { Button } from '../../components/ui/Button';
@@ -19,21 +22,27 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { formatLength, formatArea } from '@buildplanner/units';
 import { listProjectsLocally, deleteProjectLocally } from '../../services/projectService';
+import { useAuthStore } from '../../stores/authStore';
+import { AuthModal } from '../auth/AuthModal';
+import { GoogleIcon } from '../auth/GoogleIcon';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [filter, setFilter] = useState<'ALL' | 'RESIDENTIAL' | 'DEVELOPER'>('ALL');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
 
   const { data: projects = [], isLoading } = useQuery<any[]>({
-    queryKey: ['projects'],
+    queryKey: ['projects', user?.id],
     queryFn: async () => {
       try {
         const remote = await apiFetch<any[]>('/projects');
         return remote;
       } catch (err) {
-        console.warn('API unavailable on Vercel, loading local projects:', err);
-        return listProjectsLocally();
+        console.warn('API unavailable, loading user-scoped local projects:', err);
+        return listProjectsLocally(user?.id);
       }
     }
   });
@@ -56,30 +65,100 @@ export const DashboardPage: React.FC = () => {
     return p.propertyType === filter;
   });
 
+  const openAuth = (mode: 'login' | 'signup') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 pb-24">
       {/* Page Header */}
       <div className="border-b border-slate-800 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2.5">
-              <FolderOpen className="h-6 w-6 text-sky-400" />
-              Architectural Projects
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Manage parametric floor plans, site models, and municipal drawing packages.
-            </p>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400">
+                <FolderOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                  {user ? `${user.name}'s Blueprints` : 'Architectural Projects'}
+                </h1>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {user ? (
+                    <span className="flex items-center gap-2">
+                      <span className="text-slate-300 font-mono">{user.email}</span>
+                      <span>•</span>
+                      {user.provider === 'google' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400">
+                          <GoogleIcon className="h-3 w-3" />
+                          Google Account Connected
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-sky-400">
+                          <UserCheck className="h-3 w-3" />
+                          Authenticated User
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    'Manage parametric floor plans, site models, and municipal drawing packages.'
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
+
           <div className="flex items-center gap-3">
             <Button onClick={() => navigate('/wizard')} className="shadow-lg shadow-sky-500/25">
               <Plus className="h-4 w-4 mr-1.5" />
-              New Project Plan
+              New Building Plan
             </Button>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        {/* Unauthenticated User Banner */}
+        {!user && (
+          <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-950/60 via-slate-900 to-slate-900 border border-sky-800/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="h-10 w-10 rounded-xl bg-sky-500/20 border border-sky-500/30 text-sky-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Sign in to store and isolate your architectural designs</span>
+                  <Badge variant="info" className="text-[10px]">Cloud Account</Badge>
+                </h3>
+                <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+                  You are currently working in a guest session. Sign in with your Google account or email address to permanently save all your generated building plans and access them anytime.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openAuth('login')}
+                className="border-slate-700 hover:bg-slate-800 text-xs"
+              >
+                <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                Log In
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => openAuth('signup')}
+                className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs shadow-md shadow-sky-500/20"
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                Sign Up Free
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Filter Tabs */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
           <div className="flex items-center gap-2">
@@ -112,15 +191,23 @@ export const DashboardPage: React.FC = () => {
         ) : filteredProjects.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
             <Building2 className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-200">No architectural plans found</h3>
+            <h3 className="text-lg font-medium text-slate-200">
+              {user ? `No saved plans found for ${user.email}` : 'No architectural plans found'}
+            </h3>
             <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
               Get started by launching the residential planning wizard with your property dimensions.
             </p>
-            <div className="mt-6 flex items-center justify-center">
+            <div className="mt-6 flex items-center justify-center gap-3">
               <Button onClick={() => navigate('/wizard')}>
                 <Plus className="h-4 w-4 mr-1.5" />
                 Start Residential Wizard
               </Button>
+              {!user && (
+                <Button variant="outline" onClick={() => openAuth('login')}>
+                  <LogIn className="h-4 w-4 mr-1.5" />
+                  Sign In
+                </Button>
+              )}
             </div>
           </div>
         ) : (
@@ -199,6 +286,17 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        initialMode={authModalMode}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          setIsAuthModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['projects'] });
+        }}
+      />
     </div>
   );
 };

@@ -7,6 +7,7 @@ export interface IUser extends Document {
   name: string;
   organization?: string;
   role: 'HOMEOWNER' | 'ARCHITECT' | 'ENGINEER' | 'BUILDER' | 'DEVELOPER' | 'ADMIN';
+  provider?: 'local' | 'google';
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -39,6 +40,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['HOMEOWNER', 'ARCHITECT', 'ENGINEER', 'BUILDER', 'DEVELOPER', 'ADMIN'],
       default: 'HOMEOWNER'
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local'
     }
   },
   { timestamps: true }
